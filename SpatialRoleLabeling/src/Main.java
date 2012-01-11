@@ -141,6 +141,7 @@ public class Main {
                 while(itdl.hasNext()) {
                     //TODO: Obtain here the DPRL
                     //String dep = itdl.next().reln().getShortName();
+                    itdl.next();
                 }
                                 
                 /*for (List<HasWord> sentence : sentences) {
