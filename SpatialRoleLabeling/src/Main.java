@@ -1,38 +1,24 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+/****************************************
+* PLN-PMT : Spatial Role Labeling Task  *
+****************************************/
 
-/**
- *
- * @author Bogdan
- */
-
-import com.sun.org.apache.xerces.internal.jaxp.SAXParserImpl;
-import edu.stanford.nlp.ling.CoreLabel;
-import java.io.*;
-import java.util.*;
-
-import edu.stanford.nlp.ling.Sentence;
-import edu.stanford.nlp.ling.TaggedWord;
 import edu.stanford.nlp.ling.HasWord;
+import edu.stanford.nlp.ling.TaggedWord;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
-import edu.stanford.nlp.trees.Tree;
-import java.awt.peer.SystemTrayPeer;
-
-import org.w3c.dom.*;
-import javax.xml.parsers.*;
+import edu.stanford.nlp.trees.*;
+import java.io.File;
+import java.io.StringReader;
+import java.util.*;
 import org.apache.xerces.parsers.DOMParser;
-
-
-        
-     
-
-
-
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class Main {
+    
+    public static boolean TRACE = true;
+    
     public static String join(Collection s, String delimiter) {
         StringBuffer buffer = new StringBuffer();
         Iterator iter = s.iterator();
@@ -139,20 +125,24 @@ public class Main {
                 
                 //Parse sentence              
                 // This option shows parsing a list of correctly tokenized words
-                ArrayList<HasWord> pSentence = new ArrayList<HasWord>(sentences.get(0));
-                //System.out.println(pSentence);               
-                List<CoreLabel> words = new ArrayList<CoreLabel>();
-                for(int j = 0; j < pSentence.size(); j++){
-                    CoreLabel l = new CoreLabel();
-                    l.setWord(pSentence.get(j).word());
-                    words.add(l);
+                Tree sentenceTree = lp.apply(sentenceContent); 
+                if(TRACE) {
+                    sentenceTree.pennPrint();
+                    System.out.println();
+                    System.out.println(i + ": " + sentenceContent);
                 }
-                  
-                //TODO: What it doesn't work??
-                //Tree parse = lp.apply(words);          
-                //parse.pennPrint();
-                //System.out.println();
                 
+                //Obtains the typed dependency
+                TreebankLanguagePack tlp = new PennTreebankLanguagePack();
+                GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
+                GrammaticalStructure gs = gsf.newGrammaticalStructure(sentenceTree);
+                List<TypedDependency> tdl = gs.typedDependenciesCCprocessed();
+                Iterator<TypedDependency> itdl = tdl.iterator();
+                while(itdl.hasNext()) {
+                    //TODO: Obtain here the DPRL
+                    //String dep = itdl.next().reln().getShortName();
+                }
+                                
                 /*for (List<HasWord> sentence : sentences) {
                     System.out.println("SENTENCE: "+sentence);
                     ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentence);
@@ -192,7 +182,7 @@ public class Main {
                     }
                     
                     //Show the positive vector features
-                    System.out.println("VECTOR(+) = " + f2);
+                    if(TRACE) System.out.println("VECTOR(+) = " + f2);
                     //Learn this instance
                     classifier.learn(f2, "SI");
                     
@@ -207,6 +197,10 @@ public class Main {
                         f1.put("WORD_FORM", tSentence.get(w).word());
                         f1.put("WORD_POS", tSentence.get(w).tag());
                         //TODO: Dependency with the head on syntactic tree
+                     
+                        //f1.put("WORD_DPRL", );
+                        
+                        //System.out.println(tdl);
                         
                         //f3 : Relation features between w and SI (k)
                         //TODO: PATH
@@ -252,7 +246,7 @@ public class Main {
                                     }
                                 }
                                 //Show the negative vector features
-                                System.out.println("VECTOR(-) = " + featureVector);
+                                if(TRACE) System.out.println("VECTOR(-) = " + featureVector);
                                 //Learn this instance
                                 classifier.learn(featureVector, "NSI");                              
                             }
