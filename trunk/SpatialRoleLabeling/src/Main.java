@@ -69,60 +69,75 @@ public class Main {
         }catch(Exception e){
             
         }
-        System.out.println(possibleSpatialIndicators);
+        System.out.println( "Possible SI: " + possibleSpatialIndicators);
         
         try{
+            //Parse the SemEval sentences
             MaxentTagger tagger = new MaxentTagger("left3words-wsj-0-18.tagger");           
             DOMParser parser = new DOMParser();
             parser.parse("sprl_semeval3_trial0.xml");
             Document doc = parser.getDocument();
-            NodeList adnotatedSentences = doc.getElementsByTagName("SENTENCE");
+            NodeList anotatedSentences = doc.getElementsByTagName("SENTENCE");
             
-            System.out.println(adnotatedSentences.getLength());
+            System.out.println(anotatedSentences.getLength() + " sentences");
             
-            for(int i = 0; i < adnotatedSentences.getLength(); i++){
+            for(int i = 0; i < anotatedSentences.getLength(); i++){
                 
-                Node adnotetedSentence = adnotatedSentences.item(i);
-                NodeList details = adnotetedSentence.getChildNodes();
+                Node annotatedSentence = anotatedSentences.item(i);
+                NodeList details = annotatedSentence.getChildNodes();
                 
                 String sentenceContent = "";
                 List<String> sentenceSpatialIndicators = new ArrayList<String>();
                 List<Integer> sentenceSpatialIndicatorsIndex = new ArrayList<Integer>();
                 List<Integer> sentenceSpatialIndicatorsWordCount = new ArrayList<Integer>();
                 
+                //Extracts the sentence information
                 for(int j = 0; j < details.getLength(); j++){
                     Node detail = details.item(j);
+                    //Obtains the content of the sentence
                     if(detail.getNodeName().equals("CONTENT")){
                         sentenceContent = detail.getChildNodes().item(0).getNodeValue();                        
+                    //Obtains the spatial indicators of the sentence
                     } else if(detail.getNodeName().equals("SPATIAL_INDICATOR")){
                         String si = detail.getChildNodes().item(0).getNodeValue().trim();
+                        //Add to the sentence SI list
                         sentenceSpatialIndicators.add(si);
+                        //Add to the global SI list
                         spatialIndicators.add(si);
+                        //sentenceSpatialIndicatorsWordCount: number of words for each SI
                         sentenceSpatialIndicatorsWordCount.add(si.split(" ").length);
                         String id = detail.getAttributes().getNamedItem("id").getNodeValue();
+                        //sentenceSpatialIndicatorsIndex: position of SI in the sentence
                         sentenceSpatialIndicatorsIndex.add(Integer.parseInt(id.substring(2)));                        
                     }
                 }
+                
                 /*
                 System.out.println("CONTENT= \""+sentenceContent+"\"");
                 System.out.println("SPATIAL_INDICATOR= \""+sentenceSpatialIndicators+"\"");
                 System.out.println("SPATIAL_INDICATOR_INDEX= \""+sentenceSpatialIndicatorsIndex+"\"");
                 System.out.println("SPATIAL_INDICATOR_WORD_COUNT= \""+sentenceSpatialIndicatorsWordCount+"\"");
                 */
+                
+                //Tokenize the sentence (tSentence)
                 List<List<HasWord>> sentences = tagger.tokenizeText(new StringReader(sentenceContent));
                 ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentences.get(0));
+                
                 /*for (List<HasWord> sentence : sentences) {
                     System.out.println("SENTENCE: "+sentence);
                     ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentence);
                     System.out.println(Sentence.listToString(tSentence, false));
                 }*/
                 
-                for(int k = 0; k < sentenceSpatialIndicators.size(); k++){
+                //Extract the features of the Sentence, for each SI (k)
+                for(int k = 0; k < sentenceSpatialIndicators.size(); k++){                 
                     Map<String, Object> featureVector = new HashMap<String, Object>();
+                    //SI features
                     featureVector.put("SPATIAL_INDICATOR", sentenceSpatialIndicators.get(k));
                     featureVector.put("SPATIAL_INDICATOR_LEMMA", stemmer.stem(sentenceSpatialIndicators.get(k)));
                     featureVector.put("SPATIAL_INDICATOR_POS", tSentence.get(sentenceSpatialIndicatorsIndex.get(k)).tag());
                     for(int idx = sentenceSpatialIndicatorsIndex.get(k)-1; idx >=0; idx--){
+                        //HEAD1 features, searches to the left part
                         if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
                             featureVector.put("HEAD1", tSentence.get(idx).word());
                             featureVector.put("HEAD1_POS", tSentence.get(idx).tag());                                                        
@@ -131,6 +146,7 @@ public class Main {
                         }
                     }
                     for(int idx = sentenceSpatialIndicatorsIndex.get(k)+sentenceSpatialIndicatorsWordCount.get(k); idx < tSentence.size(); idx++){
+                        //HEAD2 features, searches to the right part
                         if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
                             featureVector.put("HEAD2", tSentence.get(idx).word());
                             featureVector.put("HEAD2_POS", tSentence.get(idx).tag());                            
@@ -139,20 +155,28 @@ public class Main {
                         }
                     }
                     
-                    // Get the negative examples                    
-                    
+                    //Show the positive vector features
                     System.out.println("VECTOR(+) = " + featureVector);
+                    //Learn this instance
                     classifier.learn(featureVector, "SI");
+                    
+                    //Get the negative examples                    
+                    
+                    
                 }                
+                //Checks if sentence contains one of the possible SI
+                //that is not evaluated on the positive examples
                 for(int k = 0; k < possibleSpatialIndicators.size(); k++){
                     for(int idx = 0; idx < tSentence.size() - possibleSpatialIndicators.get(k).size(); idx++){
                         if(!sentenceSpatialIndicatorsIndex.contains(idx)){
                             boolean match = true;
                             for(int iter = 0; iter < possibleSpatialIndicators.get(k).size(); iter++){
+                                //If is not a possible SI, does not match
                                 if(!tSentence.get(idx+iter).word().equals(possibleSpatialIndicators.get(k).get(iter))){
                                     match = false;
                                 }
                             }
+                            //SI has been found, is considered as a negative example
                             if(match){                                
                                 
                                 Map<String, Object> featureVector = new HashMap<String, Object>();
@@ -175,7 +199,9 @@ public class Main {
                                         break;
                                     }
                                 }
+                                //Show the negative vector features
                                 System.out.println("VECTOR(-) = " + featureVector);
+                                //Learn this instance
                                 classifier.learn(featureVector, "NSI");                              
                             }
                         }
