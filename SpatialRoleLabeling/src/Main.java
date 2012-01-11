@@ -9,13 +9,17 @@
  */
 
 import com.sun.org.apache.xerces.internal.jaxp.SAXParserImpl;
+import edu.stanford.nlp.ling.CoreLabel;
 import java.io.*;
 import java.util.*;
 
 import edu.stanford.nlp.ling.Sentence;
 import edu.stanford.nlp.ling.TaggedWord;
 import edu.stanford.nlp.ling.HasWord;
+import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
+import edu.stanford.nlp.trees.Tree;
+import java.awt.peer.SystemTrayPeer;
 
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -41,16 +45,26 @@ public class Main {
         return buffer.toString();
     }
     public static void main(String args[]){
+        
         // the stemmer
         Stemmer stemmer = new Stemmer();
         
+        // the parser
+        LexicalizedParser lp = new LexicalizedParser("grammar/englishPCFG.ser.gz");
+                        
         // the set of all possible spatial indicators
         Set<String> spatialIndicators = new TreeSet<String>();
         
-        // The classifier
+        // SI Classifier
         String[] classes = {"SI", "NSI"};
         String[] attributes = {"SPATIAL_INDICATOR", "SPATIAL_INDICATOR_POS", "SPATIAL_INDICATOR_LEMMA", "HEAD1", "HEAD2", "HEAD1_POS", "HEAD2_POS", "HEAD1_LEMMA", "HEAD2_LEMMA"};
         NaiveBayes classifier = new NaiveBayes(classes, attributes);
+        
+        // MULTICLASS Classifier
+        String[] classesMulti = {"T","L","N"};
+        //TODO: Expand attributes
+        String[] attributesMulti = {"SPATIAL_INDICATOR", "SPATIAL_INDICATOR_POS", "SPATIAL_INDICATOR_LEMMA", "HEAD1", "HEAD2", "HEAD1_POS", "HEAD2_POS", "HEAD1_LEMMA", "HEAD2_LEMMA", "WORD_FORM", "WORD_POS"};
+        NaiveBayes classifierM = new NaiveBayes(classesMulti, attributesMulti);        
         
         // POS tags of headwords
         String[] headWordsPOS = {"NN", "NNS", "NNP", "NNPS", "PRP", "PRP$", "WP$", "CD"};
@@ -120,8 +134,24 @@ public class Main {
                 */
                 
                 //Tokenize the sentence (tSentence)
-                List<List<HasWord>> sentences = tagger.tokenizeText(new StringReader(sentenceContent));
+                List<List<HasWord>> sentences = MaxentTagger.tokenizeText(new StringReader(sentenceContent));
                 ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentences.get(0));
+                
+                //Parse sentence              
+                // This option shows parsing a list of correctly tokenized words
+                ArrayList<HasWord> pSentence = new ArrayList<HasWord>(sentences.get(0));
+                //System.out.println(pSentence);               
+                List<CoreLabel> words = new ArrayList<CoreLabel>();
+                for(int j = 0; j < pSentence.size(); j++){
+                    CoreLabel l = new CoreLabel();
+                    l.setWord(pSentence.get(j).word());
+                    words.add(l);
+                }
+                  
+                //TODO: What it doesn't work??
+                //Tree parse = lp.apply(words);          
+                //parse.pennPrint();
+                //System.out.println();
                 
                 /*for (List<HasWord> sentence : sentences) {
                     System.out.println("SENTENCE: "+sentence);
@@ -130,40 +160,62 @@ public class Main {
                 }*/
                 
                 //Extract the features of the Sentence, for each SI (k)
-                for(int k = 0; k < sentenceSpatialIndicators.size(); k++){                 
-                    Map<String, Object> featureVector = new HashMap<String, Object>();
+                for(int k = 0; k < sentenceSpatialIndicators.size(); k++){    
+                    
+                    ///////////////////////
+                    // SI Classification //
+                    ///////////////////////
+                    
+                    //f2: The SI Features vector
+                    Map<String, Object> f2 = new HashMap<String, Object>();
                     //SI features
-                    featureVector.put("SPATIAL_INDICATOR", sentenceSpatialIndicators.get(k));
-                    featureVector.put("SPATIAL_INDICATOR_LEMMA", stemmer.stem(sentenceSpatialIndicators.get(k)));
-                    featureVector.put("SPATIAL_INDICATOR_POS", tSentence.get(sentenceSpatialIndicatorsIndex.get(k)).tag());
+                    f2.put("SPATIAL_INDICATOR", sentenceSpatialIndicators.get(k));
+                    f2.put("SPATIAL_INDICATOR_LEMMA", stemmer.stem(sentenceSpatialIndicators.get(k)));
+                    f2.put("SPATIAL_INDICATOR_POS", tSentence.get(sentenceSpatialIndicatorsIndex.get(k)).tag());
                     for(int idx = sentenceSpatialIndicatorsIndex.get(k)-1; idx >=0; idx--){
                         //HEAD1 features, searches to the left part
                         if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
-                            featureVector.put("HEAD1", tSentence.get(idx).word());
-                            featureVector.put("HEAD1_POS", tSentence.get(idx).tag());                                                        
-                            featureVector.put("HEAD1_LEMMA", stemmer.stem(tSentence.get(idx).word()));
+                            f2.put("HEAD1", tSentence.get(idx).word());
+                            f2.put("HEAD1_POS", tSentence.get(idx).tag());                                                        
+                            f2.put("HEAD1_LEMMA", stemmer.stem(tSentence.get(idx).word()));
                             break;
                         }
                     }
                     for(int idx = sentenceSpatialIndicatorsIndex.get(k)+sentenceSpatialIndicatorsWordCount.get(k); idx < tSentence.size(); idx++){
                         //HEAD2 features, searches to the right part
                         if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
-                            featureVector.put("HEAD2", tSentence.get(idx).word());
-                            featureVector.put("HEAD2_POS", tSentence.get(idx).tag());                            
-                            featureVector.put("HEAD2_LEMMA", stemmer.stem(tSentence.get(idx).word()));
+                            f2.put("HEAD2", tSentence.get(idx).word());
+                            f2.put("HEAD2_POS", tSentence.get(idx).tag());                            
+                            f2.put("HEAD2_LEMMA", stemmer.stem(tSentence.get(idx).word()));
                             break;
                         }
                     }
                     
                     //Show the positive vector features
-                    System.out.println("VECTOR(+) = " + featureVector);
+                    System.out.println("VECTOR(+) = " + f2);
                     //Learn this instance
-                    classifier.learn(featureVector, "SI");
+                    classifier.learn(f2, "SI");
                     
-                    //Get the negative examples                    
-                    
-                    
-                }                
+                    ///////////////////////////////////////////
+                    // Trajector and Landmark Classification //
+                    ///////////////////////////////////////////
+                                      
+                    for(int w=0;w<tSentence.size();w++) {
+                        //f1 : Features of a word w - f1(w)
+                        Map<String, Object> f1 = new HashMap<String, Object>();
+                        //SI features
+                        f1.put("WORD_FORM", tSentence.get(w).word());
+                        f1.put("WORD_POS", tSentence.get(w).tag());
+                        //TODO: Dependency with the head on syntactic tree
+                        
+                        //f3 : Relation features between w and SI (k)
+                        //TODO: PATH
+                        //TODO: Binary linear position of w respect SI (k)
+                        //TODO: Distance??
+                    }
+                }
+                
+                //Get the negative examples   
                 //Checks if sentence contains one of the possible SI
                 //that is not evaluated on the positive examples
                 for(int k = 0; k < possibleSpatialIndicators.size(); k++){
@@ -206,12 +258,15 @@ public class Main {
                             }
                         }
                     }
-                }                
+                }      
+                
+                
+                
             }
             
             
         } catch(Exception e){
-            
+            System.out.println(e);
         }
         Map<String, Object> ni1 = new TreeMap<String, Object>();
         //{HEAD1=glass, HEAD1_LEMMA=glass, HEAD1_POS=NN, HEAD2=extent, HEAD2_LEMMA=extent, HEAD2_POS=NN, SPATIAL_INDICATOR=to, SPATIAL_INDICATOR_LEMMA=to, SPATIAL_INDICATOR_POS=TO}
