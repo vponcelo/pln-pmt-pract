@@ -15,21 +15,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+
 public class Main {
     
-    public static boolean TRACE = true;
+    public static boolean TRACE = false;
     
-    public static String join(Collection s, String delimiter) {
-        StringBuffer buffer = new StringBuffer();
-        Iterator iter = s.iterator();
-        while (iter.hasNext()) {
-            buffer.append(iter.next());
-            if (iter.hasNext()) {
-                buffer.append(delimiter);
-            }
-        }
-        return buffer.toString();
-    }
     public static void main(String args[]){
         
         // the stemmer
@@ -122,16 +112,20 @@ public class Main {
                 //Tokenize the sentence (tSentence)
                 List<List<HasWord>> sentences = MaxentTagger.tokenizeText(new StringReader(sentenceContent));
                 ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentences.get(0));
-                
+                //This restores the tagged words with elided letters like "ca n't" -> "can" and "not"
+                SPRLUtils.restoreElidedLetters(tSentence);
+                //Constructs the simple sentence with restored letters
+                sentenceContent = SPRLUtils.constructRestoredSentence(tSentence);                
                 //Parse sentence              
-                // This option shows parsing a list of correctly tokenized words
                 Tree sentenceTree = lp.apply(sentenceContent); 
                 if(TRACE) {
-                    sentenceTree.pennPrint();
                     System.out.println();
                     System.out.println(i + ": " + sentenceContent);
+                    System.out.println("Tagged: " + tSentence);
+                    System.out.println("Tree:");
+                    sentenceTree.pennPrint();
                 }
-                
+                               
                 //Obtains the typed dependency
                 TreebankLanguagePack tlp = new PennTreebankLanguagePack();
                 GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
@@ -143,12 +137,6 @@ public class Main {
                     //String dep = itdl.next().reln().getShortName();
                     itdl.next();
                 }
-                                
-                /*for (List<HasWord> sentence : sentences) {
-                    System.out.println("SENTENCE: "+sentence);
-                    ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentence);
-                    System.out.println(Sentence.listToString(tSentence, false));
-                }*/
                 
                 //Extract the features of the Sentence, for each SI (k)
                 for(int k = 0; k < sentenceSpatialIndicators.size(); k++){    
@@ -156,36 +144,12 @@ public class Main {
                     ///////////////////////
                     // SI Classification //
                     ///////////////////////
-                    
-                    //f2: The SI Features vector
-                    Map<String, Object> f2 = new HashMap<String, Object>();
-                    //SI features
-                    f2.put("SPATIAL_INDICATOR", sentenceSpatialIndicators.get(k));
-                    f2.put("SPATIAL_INDICATOR_LEMMA", stemmer.stem(sentenceSpatialIndicators.get(k)));
-                    f2.put("SPATIAL_INDICATOR_POS", tSentence.get(sentenceSpatialIndicatorsIndex.get(k)).tag());
-                    for(int idx = sentenceSpatialIndicatorsIndex.get(k)-1; idx >=0; idx--){
-                        //HEAD1 features, searches to the left part
-                        if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
-                            f2.put("HEAD1", tSentence.get(idx).word());
-                            f2.put("HEAD1_POS", tSentence.get(idx).tag());                                                        
-                            f2.put("HEAD1_LEMMA", stemmer.stem(tSentence.get(idx).word()));
-                            break;
-                        }
-                    }
-                    for(int idx = sentenceSpatialIndicatorsIndex.get(k)+sentenceSpatialIndicatorsWordCount.get(k); idx < tSentence.size(); idx++){
-                        //HEAD2 features, searches to the right part
-                        if(listHeadWordsPOS.contains(tSentence.get(idx).tag())){
-                            f2.put("HEAD2", tSentence.get(idx).word());
-                            f2.put("HEAD2_POS", tSentence.get(idx).tag());                            
-                            f2.put("HEAD2_LEMMA", stemmer.stem(tSentence.get(idx).word()));
-                            break;
-                        }
-                    }
-                    
+                    SPRLFeatures fpos = new SPRLFeatures();
+                    fpos.findF2pos(k, sentenceSpatialIndicators, sentenceSpatialIndicatorsIndex, sentenceSpatialIndicatorsWordCount, listHeadWordsPOS, stemmer, tSentence);                  
                     //Show the positive vector features
-                    if(TRACE) System.out.println("VECTOR(+) = " + f2);
+                    if(TRACE) System.out.println("VECTOR(+) = " + fpos.getF2pos());
                     //Learn this instance
-                    classifier.learn(f2, "SI");
+                    classifier.learn(fpos.getF2pos(), "SI");
                     
                     ///////////////////////////////////////////
                     // Trajector and Landmark Classification //
@@ -198,11 +162,7 @@ public class Main {
                         f1.put("WORD_FORM", tSentence.get(w).word());
                         f1.put("WORD_POS", tSentence.get(w).tag());
                         //TODO: Dependency with the head on syntactic tree
-                     
                         //f1.put("WORD_DPRL", );
-                        
-                        //System.out.println(tdl);
-                        
                         //f3 : Relation features between w and SI (k)
                         //TODO: PATH
                         //TODO: Binary linear position of w respect SI (k)
@@ -225,31 +185,12 @@ public class Main {
                             }
                             //SI has been found, is considered as a negative example
                             if(match){                                
-                                
-                                Map<String, Object> featureVector = new HashMap<String, Object>();
-                                featureVector.put("SPATIAL_INDICATOR", join(possibleSpatialIndicators.get(k)," "));
-                                featureVector.put("SPATIAL_INDICATOR_LEMMA", stemmer.stem(join(possibleSpatialIndicators.get(k)," ")));
-                                featureVector.put("SPATIAL_INDICATOR_POS", tSentence.get(idx).tag());
-                                for(int idxx = idx-1; idxx >=0; idxx--){
-                                    if(listHeadWordsPOS.contains(tSentence.get(idxx).tag())){
-                                        featureVector.put("HEAD1", tSentence.get(idxx).word());
-                                        featureVector.put("HEAD1_POS", tSentence.get(idxx).tag());                                                        
-                                        featureVector.put("HEAD1_LEMMA", stemmer.stem(tSentence.get(idxx).word()));
-                                        break;
-                                    }
-                                }
-                                for(int idxx = idx+possibleSpatialIndicators.get(k).size(); idxx < tSentence.size(); idxx++){
-                                    if(listHeadWordsPOS.contains(tSentence.get(idxx).tag())){
-                                        featureVector.put("HEAD2", tSentence.get(idxx).word());
-                                        featureVector.put("HEAD2_POS", tSentence.get(idxx).tag());                            
-                                        featureVector.put("HEAD2_LEMMA", stemmer.stem(tSentence.get(idxx).word()));
-                                        break;
-                                    }
-                                }
+                                SPRLFeatures fneg = new SPRLFeatures();
+                                fneg.findF2neg(k, idx, possibleSpatialIndicators, listHeadWordsPOS, stemmer, tSentence);
                                 //Show the negative vector features
-                                if(TRACE) System.out.println("VECTOR(-) = " + featureVector);
+                                if(TRACE) System.out.println("VECTOR(-) = " + fneg.getF2neg());
                                 //Learn this instance
-                                classifier.learn(featureVector, "NSI");                              
+                                classifier.learn(fneg.getF2neg(), "NSI");                              
                             }
                         }
                     }
@@ -290,4 +231,5 @@ public class Main {
         System.out.println("CLASS= "+   classifier.classify(ni2));
         //System.out.println("ALL SPATIAL INDICATORS: "+spatialIndicators);
     }
+
 }
