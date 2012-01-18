@@ -1,5 +1,6 @@
 
 import edu.stanford.nlp.ling.TaggedWord;
+import edu.stanford.nlp.trees.TypedDependency;
 import java.util.*;
 
 /*
@@ -27,11 +28,28 @@ public class SPRLFeatures {
 
     //Method to find the F1 positive instances
     void findF1pos(int w, 
-                ArrayList<TaggedWord> tSentence
+                ArrayList<TaggedWord> tSentence,
+                List<TypedDependency> tdl
                 ) {
-        //TODO
+        
         f1.put("WORD_FORM", tSentence.get(w).word());
         f1.put("WORD_POS", tSentence.get(w).tag());
+        //Dependency with the head on syntactic tree
+        Iterator<TypedDependency> itdl = tdl.iterator();
+        while(itdl.hasNext()) {
+            //Obtain here the DPRL
+            String dprl = itdl.next().dep().nodeString();
+            if(dprl.equals(tSentence.get(w).word())) {
+                f1.put("WORD_DPRL", dprl);
+                break;
+            }
+        }
+
+        //System.out.println(tSentence);
+        //System.out.println(tdl);
+        //System.out.println("tSentence: " + tSentence.size());
+        //System.out.println("tdl: " + tdl.size());
+            
     }
     
     //Method to find the F1 negative instances
@@ -107,6 +125,10 @@ public class SPRLFeatures {
     //Method to find the F3 positive instances
     void findF3pos() {
         //TODO
+        //f3 : Relation features between w and SI (k)
+        //TODO: PATH
+        //TODO: Binary linear position of w respect SI (k)
+        //TODO: Distance??
     }
     
     //Method to find the F3 negative instances
