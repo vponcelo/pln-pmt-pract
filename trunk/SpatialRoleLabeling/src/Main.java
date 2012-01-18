@@ -147,9 +147,9 @@ public class Main {
                     SPRLFeatures fpos = new SPRLFeatures();
                     fpos.findF2pos(k, sentenceSpatialIndicators, sentenceSpatialIndicatorsIndex, sentenceSpatialIndicatorsWordCount, listHeadWordsPOS, stemmer, tSentence);                  
                     //Show the positive vector features
-                    if(TRACE) System.out.println("VECTOR(+) = " + fpos.getF2pos());
+                    if(TRACE) System.out.println("VECTOR(+) = " + fpos.getF2());
                     //Learn this instance
-                    classifier.learn(fpos.getF2pos(), "SI");
+                    classifier.learn(fpos.getF2(), "SI");
                     
                     ///////////////////////////////////////////
                     // Trajector and Landmark Classification //
@@ -157,10 +157,9 @@ public class Main {
                                       
                     for(int w=0;w<tSentence.size();w++) {
                         //f1 : Features of a word w - f1(w)
-                        Map<String, Object> f1 = new HashMap<String, Object>();
+                        fpos.findF1pos(w, tSentence);
                         //SI features
-                        f1.put("WORD_FORM", tSentence.get(w).word());
-                        f1.put("WORD_POS", tSentence.get(w).tag());
+
                         //TODO: Dependency with the head on syntactic tree
                         //f1.put("WORD_DPRL", );
                         //f3 : Relation features between w and SI (k)
@@ -188,9 +187,9 @@ public class Main {
                                 SPRLFeatures fneg = new SPRLFeatures();
                                 fneg.findF2neg(k, idx, possibleSpatialIndicators, listHeadWordsPOS, stemmer, tSentence);
                                 //Show the negative vector features
-                                if(TRACE) System.out.println("VECTOR(-) = " + fneg.getF2neg());
+                                if(TRACE) System.out.println("VECTOR(-) = " + fneg.getF2());
                                 //Learn this instance
-                                classifier.learn(fneg.getF2neg(), "NSI");                              
+                                classifier.learn(fneg.getF2(), "NSI");                              
                             }
                         }
                     }
