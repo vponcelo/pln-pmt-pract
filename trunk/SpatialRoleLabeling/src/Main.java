@@ -19,6 +19,7 @@ import org.w3c.dom.NodeList;
 public class Main {
     
     public static boolean TRACE = false;
+    private static int NSENTENCES = 200;
     
     public static void main(String args[]){
         
@@ -69,9 +70,10 @@ public class Main {
             Document doc = parser.getDocument();
             NodeList anotatedSentences = doc.getElementsByTagName("SENTENCE");
             
-            System.out.println(anotatedSentences.getLength() + " sentences");
+            System.out.println(NSENTENCES + " sentences");
             
-            for(int i = 0; i < anotatedSentences.getLength(); i++){
+            //Maximum is -- anotatedSentences.getLength() --
+            for(int i = 0; i < NSENTENCES; i++){
                 
                 Node annotatedSentence = anotatedSentences.item(i);
                 NodeList details = annotatedSentence.getChildNodes();
@@ -131,42 +133,28 @@ public class Main {
                 GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
                 GrammaticalStructure gs = gsf.newGrammaticalStructure(sentenceTree);
                 List<TypedDependency> tdl = gs.typedDependenciesCCprocessed();
-                Iterator<TypedDependency> itdl = tdl.iterator();
-                while(itdl.hasNext()) {
-                    //TODO: Obtain here the DPRL
-                    //String dep = itdl.next().reln().getShortName();
-                    itdl.next();
-                }
                 
                 //Extract the features of the Sentence, for each SI (k)
                 for(int k = 0; k < sentenceSpatialIndicators.size(); k++){    
                     
-                    ///////////////////////
-                    // SI Classification //
-                    ///////////////////////
                     SPRLFeatures fpos = new SPRLFeatures();
+
+                    //1. SI Classification //
+                    //f2 : Features of a SI - f2(SI)
                     fpos.findF2pos(k, sentenceSpatialIndicators, sentenceSpatialIndicatorsIndex, sentenceSpatialIndicatorsWordCount, listHeadWordsPOS, stemmer, tSentence);                  
+                    
+                    //2. Trajector and Landmark Classification //                                    
+                    for(int w=0;w<tSentence.size();w++) {
+                        //f1 : Features of a word w - f1(w)
+                        fpos.findF1pos(w, tSentence, tdl);
+                        //f3 : Relations between word w and SI - f3(w,SI)
+                        fpos.findF3pos();
+                    }
+                    
                     //Show the positive vector features
                     if(TRACE) System.out.println("VECTOR(+) = " + fpos.getF2());
                     //Learn this instance
                     classifier.learn(fpos.getF2(), "SI");
-                    
-                    ///////////////////////////////////////////
-                    // Trajector and Landmark Classification //
-                    ///////////////////////////////////////////
-                                      
-                    for(int w=0;w<tSentence.size();w++) {
-                        //f1 : Features of a word w - f1(w)
-                        fpos.findF1pos(w, tSentence);
-                        //SI features
-
-                        //TODO: Dependency with the head on syntactic tree
-                        //f1.put("WORD_DPRL", );
-                        //f3 : Relation features between w and SI (k)
-                        //TODO: PATH
-                        //TODO: Binary linear position of w respect SI (k)
-                        //TODO: Distance??
-                    }
                 }
                 
                 //Get the negative examples   
