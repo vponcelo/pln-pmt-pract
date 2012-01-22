@@ -1,6 +1,3 @@
-/****************************************
-* PLN-PMT : Spatial Role Labeling Task  *
-****************************************/
 
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.ling.TaggedWord;
@@ -15,17 +12,25 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
+/**
+ *
+ * @author Matias
+ */
 public class Main {
     
     public static boolean TRACE = false;
-    private static int NSENTENCES = 200;
+    private static int NSENTENCES = 599;
     
     public static void main(String args[]){
         
         // the stemmer
         Stemmer stemmer = new Stemmer();
-        
+
         // the parser
         LexicalizedParser lp = new LexicalizedParser("grammar/englishPCFG.ser.gz");
                         
@@ -34,7 +39,7 @@ public class Main {
         
         // SI Classifier
         String[] classes = {"SI", "NSI"};
-        String[] attributes = {"SPATIAL_INDICATOR", "SPATIAL_INDICATOR_POS", "SPATIAL_INDICATOR_LEMMA", "HEAD1", "HEAD2", "HEAD1_POS", "HEAD2_POS", "HEAD1_LEMMA", "HEAD2_LEMMA"};
+        String[] attributes = {"HEAD1", "HEAD1LEMMA", "HEAD1POS", "HEAD2", "HEAD2LEMMA", "HEAD2POS", "PREP", "PREPPOS", "PREPSPATIAL"};
         NaiveBayes classifier = new NaiveBayes(classes, attributes);
         
         // MULTICLASS Classifier
@@ -66,17 +71,17 @@ public class Main {
             //Parse the SemEval sentences
             MaxentTagger tagger = new MaxentTagger("left3words-wsj-0-18.tagger");           
             DOMParser parser = new DOMParser();
-            parser.parse("sprl_semeval3_trial0.xml");
+            parser.parse("SItrain.xml");
             Document doc = parser.getDocument();
-            NodeList anotatedSentences = doc.getElementsByTagName("SENTENCE");
-            
+            NodeList trainingSentences = doc.getElementsByTagName("SENTENCE");
             System.out.println(NSENTENCES + " sentences");
             
             //Maximum is -- anotatedSentences.getLength() --
             for(int i = 0; i < NSENTENCES; i++){
                 
-                Node annotatedSentence = anotatedSentences.item(i);
+                Node annotatedSentence = trainingSentences.item(i);
                 NodeList details = annotatedSentence.getChildNodes();
+                NodeList features = null;
                 
                 String sentenceContent = "";
                 List<String> sentenceSpatialIndicators = new ArrayList<String>();
@@ -86,10 +91,12 @@ public class Main {
                 //Extracts the sentence information
                 for(int j = 0; j < details.getLength(); j++){
                     Node detail = details.item(j);
-                    //Obtains the content of the sentence
+                    // -- CONTENT --
                     if(detail.getNodeName().equals("CONTENT")){
                         sentenceContent = detail.getChildNodes().item(0).getNodeValue();                        
-                    //Obtains the spatial indicators of the sentence
+                    // TODO: Missing -- TRAJECTOR --
+                    // TODO: Missing -- LANDMARK --
+                    // -- SPATIAL INDICATOR --
                     } else if(detail.getNodeName().equals("SPATIAL_INDICATOR")){
                         String si = detail.getChildNodes().item(0).getNodeValue().trim();
                         //Add to the sentence SI list
@@ -100,90 +107,39 @@ public class Main {
                         sentenceSpatialIndicatorsWordCount.add(si.split(" ").length);
                         String id = detail.getAttributes().getNamedItem("id").getNodeValue();
                         //sentenceSpatialIndicatorsIndex: position of SI in the sentence
-                        sentenceSpatialIndicatorsIndex.add(Integer.parseInt(id.substring(2)));                        
-                    }
-                }
+                        sentenceSpatialIndicatorsIndex.add(Integer.parseInt(id.substring(2)));     
+                    // TODO: Missing -- RELATION --
+                    // -- PREPS --
+                    } else if(detail.getNodeName().equals("PREPS")){
+                        features = detail.getChildNodes();
+                    }                       
+                }                          
                 
-                /*
-                System.out.println("CONTENT= \""+sentenceContent+"\"");
-                System.out.println("SPATIAL_INDICATOR= \""+sentenceSpatialIndicators+"\"");
-                System.out.println("SPATIAL_INDICATOR_INDEX= \""+sentenceSpatialIndicatorsIndex+"\"");
-                System.out.println("SPATIAL_INDICATOR_WORD_COUNT= \""+sentenceSpatialIndicatorsWordCount+"\"");
-                */
-                
-                //Tokenize the sentence (tSentence)
-                List<List<HasWord>> sentences = MaxentTagger.tokenizeText(new StringReader(sentenceContent));
-                ArrayList<TaggedWord> tSentence = tagger.tagSentence(sentences.get(0));
-                //This restores the tagged words with elided letters like "ca n't" -> "can" and "not"
-                SPRLUtils.restoreElidedLetters(tSentence);
-                //Constructs the simple sentence with restored letters
-                sentenceContent = SPRLUtils.constructRestoredSentence(tSentence);                
-                //Parse sentence              
-                Tree sentenceTree = lp.apply(sentenceContent); 
-                if(TRACE) {
-                    System.out.println();
-                    System.out.println(i + ": " + sentenceContent);
-                    System.out.println("Tagged: " + tSentence);
-                    System.out.println("Tree:");
-                    sentenceTree.pennPrint();
-                }
-                               
-                //Obtains the typed dependency
-                TreebankLanguagePack tlp = new PennTreebankLanguagePack();
-                GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
-                GrammaticalStructure gs = gsf.newGrammaticalStructure(sentenceTree);
-                List<TypedDependency> tdl = gs.typedDependenciesCCprocessed();
-                
-                //Extract the features of the Sentence, for each SI (k)
-                for(int k = 0; k < sentenceSpatialIndicators.size(); k++){    
-                    
-                    SPRLFeatures fpos = new SPRLFeatures();
-
-                    //1. SI Classification //
-                    //f2 : Features of a SI - f2(SI)
-                    fpos.findF2pos(k, sentenceSpatialIndicators, sentenceSpatialIndicatorsIndex, sentenceSpatialIndicatorsWordCount, listHeadWordsPOS, stemmer, tSentence);                  
-                    
-                    //2. Trajector and Landmark Classification //                                    
-                    for(int w=0;w<tSentence.size();w++) {
-                        //f1 : Features of a word w - f1(w)
-                        fpos.findF1pos(w, tSentence, tdl);
-                        //f3 : Relations between word w and SI - f3(w,SI)
-                        fpos.findF3pos();
-                    }
-                    
-                    //Show the positive vector features
-                    if(TRACE) System.out.println("VECTOR(+) = " + fpos.getF2());
-                    //Learn this instance
-                    classifier.learn(fpos.getF2(), "SI");
-                }
-                
-                //Get the negative examples   
-                //Checks if sentence contains one of the possible SI
-                //that is not evaluated on the positive examples
-                for(int k = 0; k < possibleSpatialIndicators.size(); k++){
-                    for(int idx = 0; idx < tSentence.size() - possibleSpatialIndicators.get(k).size(); idx++){
-                        if(!sentenceSpatialIndicatorsIndex.contains(idx)){
-                            boolean match = true;
-                            for(int iter = 0; iter < possibleSpatialIndicators.get(k).size(); iter++){
-                                //If is not a possible SI, does not match
-                                if(!tSentence.get(idx+iter).word().equals(possibleSpatialIndicators.get(k).get(iter))){
-                                    match = false;
-                                }
-                            }
-                            //SI has been found, is considered as a negative example
-                            if(match){                                
-                                SPRLFeatures fneg = new SPRLFeatures();
-                                fneg.findF2neg(k, idx, possibleSpatialIndicators, listHeadWordsPOS, stemmer, tSentence);
-                                //Show the negative vector features
-                                if(TRACE) System.out.println("VECTOR(-) = " + fneg.getF2());
-                                //Learn this instance
-                                classifier.learn(fneg.getF2(), "NSI");                              
-                            }
+                for(int p = 0; p < features.getLength(); p++){
+                    if(features.item(p).getNodeName().equals("PREPOSITION")) {
+                        NodeList prepItems = features.item(p).getChildNodes();
+                        SPRLFeatures2 sprl = new SPRLFeatures2();
+                        sprl.putF2("HEAD1", prepItems.item(0).getNodeValue());
+                        sprl.putF2("HEAD1LEMMA", prepItems.item(1).getNodeValue());
+                        sprl.putF2("HEAD1POS", prepItems.item(2).getNodeValue());
+                        sprl.putF2("HEAD2", prepItems.item(3).getNodeValue());
+                        sprl.putF2("HEAD2LEMMA", prepItems.item(4).getNodeValue());
+                        sprl.putF2("HEAD2POS", prepItems.item(5).getNodeValue());
+                        sprl.putF2("PREP", prepItems.item(6).getNodeValue());
+                        sprl.putF2("PREPPOS", prepItems.item(7).getNodeValue());
+                        sprl.putF2("PREPSPATIAL", prepItems.item(8).getNodeValue());
+                        String prepclass = prepItems.item(8).getNodeValue();
+                        if(prepclass.equals("SI")) {
+                            //Positive instance
+                            System.out.println("Positive instance: " + sprl.getF2());
+                            classifier.learn(sprl.getF2(), "SI");
+                        }else if(prepclass.equals("NSI")) {
+                            //Negative instance
+                            System.out.println("Negative instance: " + sprl.getF2());
+                            classifier.learn(sprl.getF2(), "NSI");
                         }
                     }
-                }      
-                
-                
+                }
                 
             }
             
@@ -218,5 +174,5 @@ public class Main {
         System.out.println("CLASS= "+   classifier.classify(ni2));
         //System.out.println("ALL SPATIAL INDICATORS: "+spatialIndicators);
     }
-
+    
 }

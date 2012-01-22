@@ -1,60 +1,49 @@
 <?xml version="1.0" ?><DOC>
-<SENTENCE id="s0">
-	<CONTENT>He saw Owen redden with pleasure , and laughed , flinging an arm about his shoulders .</CONTENT>
+
+<SENTENCE id="s1">
+	<CONTENT>About 20 kids in traditional clothing and hats waiting on stairs .</CONTENT>
 	<TRAJECTOR id="tw2"> Kids</TRAJECTOR>
 	<LANDMARK id="lw10"> Stairs</LANDMARK>
 	<SPATIAL_INDICATOR id="sw9">on </SPATIAL_INDICATOR>
 	<RELATION general_type="region" id="r0" lm="lw10" sp="sw9" tr="tw2"/>
-	<POSTAGS>He/PRP saw/VBD Owen/NNP redden/NN with/IN pleasure/NN ,/, and/CC laughed/VBD ,/, flinging/VBG an/DT arm/NN about/IN his/PRP$ shoulders/NNS ./.</POSTAGS>
-	<TREE>(ROOT (S [129,248] (NP [4,268] (PRP [3,018] He)) (VP [123,839] (VP [52,649] (VBD [5,817] saw) (NP [27,514] (NNP [9,086] Owen) (NN [12,059] redden)) (PP [15,506] (IN [2,594] with) (NP [12,239] (NN [9,910] pleasure)))) (, [-0,000] ,) (CC [0,106] and) (VP [11,294] (VBD [9,040] laughed)) (, [-0,000] ,) (S [48,857] (VP [47,207] (VBG [9,601] flinging) (NP [13,641] (DT [3,221] an) (NN [8,437] arm)) (PP [21,349] (IN [4,351] about) (NP [16,325] (PRP$ [1,601] his) (NNS [10,045] shoulders)))))) (. [0,002] .)))</TREE>
+	<POSTAGS>About/IN 20/CD kids/NNS in/IN traditional/JJ clothing/NN and/CC hats/NNS waiting/VBG on/IN stairs/NNS ./.</POSTAGS>
+	<TREE>(ROOT (NP [91,008] (NP [60,518] (NP [21,670] (QP [10,968] (RB [3,833] About) (CD [4,671] 20)) (NNS [8,049] kids)) (PP [35,858] (IN [1,850] in) (NP [33,606] (JJ [6,731] traditional) (NN [9,009] clothing) (CC [0,165] and) (NNS [8,534] hats)))) (VP [25,138] (VBG [5,384] waiting) (PP [17,445] (IN [2,538] on) (NP [14,234] (NNS [11,249] stairs)))) (. [0,021] .)))</TREE>
 	<DEPENDENCIES>
-		<DEPREL>name:nsubj specific:None gov:saw dep:He</DEPREL>
-		<DEPREL>name:nn specific:None gov:redden dep:Owen</DEPREL>
-		<DEPREL>name:dobj specific:None gov:saw dep:redden</DEPREL>
-		<DEPREL>name:prep specific:with gov:saw dep:pleasure</DEPREL>
-		<DEPREL>name:conj specific:and gov:saw dep:laughed</DEPREL>
-		<DEPREL>name:xcomp specific:None gov:saw dep:flinging</DEPREL>
-		<DEPREL>name:det specific:None gov:arm dep:an</DEPREL>
-		<DEPREL>name:dobj specific:None gov:flinging dep:arm</DEPREL>
-		<DEPREL>name:poss specific:None gov:shoulders dep:his</DEPREL>
-		<DEPREL>name:prep specific:about gov:flinging dep:shoulders</DEPREL>
+		<DEPREL>name:quantmod specific:None gov:20 dep:About</DEPREL>
+		<DEPREL>name:num specific:None gov:kids dep:20</DEPREL>
+		<DEPREL>name:amod specific:None gov:clothing dep:traditional</DEPREL>
+		<DEPREL>name:prep specific:in gov:kids dep:clothing</DEPREL>
+		<DEPREL>name:conj specific:and gov:clothing dep:hats</DEPREL>
+		<DEPREL>name:partmod specific:None gov:kids dep:waiting</DEPREL>
+		<DEPREL>name:prep specific:on gov:waiting dep:stairs</DEPREL>
 	</DEPENDENCIES>
 	<PREPS>
 		<PREPOSITION>
-			<HEAD1>saw</HEAD1>
-			<HEAD1_LEMMA>saw</HEAD1_LEMMA>
-			<HEAD1_POS>VBD</HEAD1_POS>
-			<HEAD2>pleasure</HEAD2>
-			<HEAD_LEMMA>pleasure</HEAD_LEMMA>
+			<HEAD1>kids</HEAD1>
+			<HEAD1_LEMMA>kid</HEAD1_LEMMA>
+			<HEAD1_POS>NNS</HEAD1_POS>
+			<HEAD2>clothing</HEAD2>
+			<HEAD_LEMMA>clothing</HEAD_LEMMA>
 			<HEAD2_POS>NN</HEAD2_POS>
-			<PREP>with</PREP>
+			<PREP>in</PREP>
 			<PREP_POS>IN</PREP_POS>
-			<PREP_SPATIAL>0.0</PREP_SPATIAL>
+			<PREP_SPATIAL>0.133333333333</PREP_SPATIAL>
 			<CLASS>NSI</CLASS>
 		</PREPOSITION>
 		<PREPOSITION>
-			<HEAD1>flinging</HEAD1>
-			<HEAD1_LEMMA>flinging</HEAD1_LEMMA>
+			<HEAD1>waiting</HEAD1>
+			<HEAD1_LEMMA>waiting</HEAD1_LEMMA>
 			<HEAD1_POS>VBG</HEAD1_POS>
-			<HEAD2>shoulders</HEAD2>
-			<HEAD_LEMMA>shoulder</HEAD_LEMMA>
+			<HEAD2>stairs</HEAD2>
+			<HEAD_LEMMA>stair</HEAD_LEMMA>
 			<HEAD2_POS>NNS</HEAD2_POS>
-			<PREP>about</PREP>
+			<PREP>on</PREP>
 			<PREP_POS>IN</PREP_POS>
-			<PREP_SPATIAL>0.5</PREP_SPATIAL>
-			<CLASS>NSI</CLASS>
+			<PREP_SPATIAL>0.25</PREP_SPATIAL>
+			<CLASS>SI</CLASS>
 		</PREPOSITION>
 	</PREPS>
 </SENTENCE>
-
-
-<SENTENCE id="s1">
-<CONTENT>About 20 kids in traditional clothing and hats waiting on stairs .</CONTENT>
-<TRAJECTOR id="tw2"> Kids</TRAJECTOR>
-<LANDMARK id="lw10"> Stairs</LANDMARK>
-<SPATIAL_INDICATOR id="sw9">on </SPATIAL_INDICATOR>
-<RELATION general_type="region" id="r0" lm="lw10" sp="sw9" tr="tw2"/>
-<POSTAGS>About/IN 20/CD kids/NNS in/IN traditional/JJ clothing/NN and/CC hats/NNS waiting/VBG on/IN stairs/NNS ./.</POSTAGS><TREE>(ROOT (NP [91,008] (NP [60,518] (NP [21,670] (QP [10,968] (RB [3,833] About) (CD [4,671] 20)) (NNS [8,049] kids)) (PP [35,858] (IN [1,850] in) (NP [33,606] (JJ [6,731] traditional) (NN [9,009] clothing) (CC [0,165] and) (NNS [8,534] hats)))) (VP [25,138] (VBG [5,384] waiting) (PP [17,445] (IN [2,538] on) (NP [14,234] (NNS [11,249] stairs)))) (. [0,021] .)))</TREE><DEPENDENCIES><DEPREL>name:quantmod specific:None gov:20 dep:About</DEPREL><DEPREL>name:num specific:None gov:kids dep:20</DEPREL><DEPREL>name:amod specific:None gov:clothing dep:traditional</DEPREL><DEPREL>name:prep specific:in gov:kids dep:clothing</DEPREL><DEPREL>name:conj specific:and gov:clothing dep:hats</DEPREL><DEPREL>name:partmod specific:None gov:kids dep:waiting</DEPREL><DEPREL>name:prep specific:on gov:waiting dep:stairs</DEPREL></DEPENDENCIES><PREPS><PREPOSITION><HEAD1>kids</HEAD1><HEAD1_LEMMA>kid</HEAD1_LEMMA><HEAD1_POS>NNS</HEAD1_POS><HEAD2>clothing</HEAD2><HEAD_LEMMA>clothing</HEAD_LEMMA><HEAD2_POS>NN</HEAD2_POS><PREP>in</PREP><PREP_POS>IN</PREP_POS><PREP_SPATIAL>0.133333333333</PREP_SPATIAL><CLASS>NSI</CLASS></PREPOSITION><PREPOSITION><HEAD1>waiting</HEAD1><HEAD1_LEMMA>waiting</HEAD1_LEMMA><HEAD1_POS>VBG</HEAD1_POS><HEAD2>stairs</HEAD2><HEAD_LEMMA>stair</HEAD_LEMMA><HEAD2_POS>NNS</HEAD2_POS><PREP>on</PREP><PREP_POS>IN</PREP_POS><PREP_SPATIAL>0.25</PREP_SPATIAL><CLASS>SI</CLASS></PREPOSITION></PREPS></SENTENCE>
 
 <SENTENCE id="s2">
 <CONTENT>a house and a green wall with gate in the background .</CONTENT>
